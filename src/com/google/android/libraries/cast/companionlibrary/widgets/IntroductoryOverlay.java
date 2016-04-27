@@ -84,7 +84,6 @@ public class IntroductoryOverlay extends RelativeLayout {
     private TextView mTitleText;
     private TextView mSubtitleText;
     private Button mButton;
-    private Context mContext;
     private float mFocusRadius;
     private int mOverlayColorId;
     private int mCenterY;
@@ -103,14 +102,13 @@ public class IntroductoryOverlay extends RelativeLayout {
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     public IntroductoryOverlay(Builder builder, AttributeSet attrs, int defStyleAttr) {
         super(builder.mContext, attrs, defStyleAttr);
-        mContext = builder.mContext;
         mIsSingleTime = builder.mSingleTime;
-        LayoutInflater inflater = LayoutInflater.from(mContext);
+        LayoutInflater inflater = LayoutInflater.from(getContext());
         inflater.inflate(R.layout.ccl_intro_overlay, this);
         mButton = (Button) findViewById(R.id.button);
         mTitleText = (TextView) findViewById(R.id.textTitle);
         mSubtitleText = (TextView) findViewById(R.id.textSubtitle);
-        TypedArray typedArray = mContext.getTheme()
+        TypedArray typedArray = getContext().getTheme()
                 .obtainStyledAttributes(attrs, R.styleable.CCLIntroOverlay,
                         R.attr.CCLIntroOverlayStyle, R.style.CCLIntroOverlay);
         if (builder.mOverlayColor != 0) {
@@ -143,15 +141,14 @@ public class IntroductoryOverlay extends RelativeLayout {
      * Shows the overlay if it is not visible already.
      */
     public void show() {
-        if (mIsSingleTime && isFtuShown(mContext)) {
+        if (mIsSingleTime && isFtuShown()) {
             // we are exceeding the max number
-            mContext = null;
             mListener = null;
             return;
         }
         if (!mIsOverlayVisible) {
             mIsOverlayVisible = true;
-            ((ViewGroup) ((Activity) mContext).getWindow().getDecorView()).addView(this);
+            ((ViewGroup) ((Activity) getContext()).getWindow().getDecorView()).addView(this);
         }
     }
 
@@ -162,14 +159,13 @@ public class IntroductoryOverlay extends RelativeLayout {
      * for all practical purposes, this component cannot be re-used.
      */
     public void remove() {
-        if (mContext != null) {
-            ((ViewGroup) ((Activity) mContext).getWindow().getDecorView()).removeView(this);
+        if (getContext() != null) {
+            ((ViewGroup) ((Activity) getContext()).getWindow().getDecorView()).removeView(this);
         }
         if (mBitmap != null && !mBitmap.isRecycled()) {
             mBitmap.recycle();
         }
         mBitmap = null;
-        mContext = null;
         mListener = null;
     }
 
@@ -227,15 +223,6 @@ public class IntroductoryOverlay extends RelativeLayout {
         return true;
     }
 
-    @Override
-    protected void onDetachedFromWindow() {
-        // we make sure we do a clean up
-        if (mContext != null) {
-            mContext = null;
-        }
-        super.onDetachedFromWindow();
-    }
-
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public void fadeOut(long duration) {
         ObjectAnimator oa = ObjectAnimator.ofFloat(this, ALPHA_PROPERTY, INVISIBLE_VALUE);
@@ -243,7 +230,7 @@ public class IntroductoryOverlay extends RelativeLayout {
 
             @Override
             public void onAnimationEnd(Animator animator) {
-                setFtuShown(mContext);
+                setFtuShown();
                 if(mListener != null) {
                     mListener.onOverlayDismissed();
                     mListener = null;
@@ -255,13 +242,19 @@ public class IntroductoryOverlay extends RelativeLayout {
         oa.start();
     }
 
-    private void setFtuShown(Context ctx) {
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(ctx);
+    private void setFtuShown() {
+        if (getContext() == null){
+            return;
+        }
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
         sharedPref.edit().putBoolean(FTU_SHOWN_KEY, true).apply();
     }
 
-    private boolean isFtuShown(Context ctx) {
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(ctx);
+    private boolean isFtuShown() {
+        if (getContext() == null){
+            return false;
+        }
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
         return sharedPref.getBoolean(FTU_SHOWN_KEY, false);
     }
 
@@ -270,7 +263,6 @@ public class IntroductoryOverlay extends RelativeLayout {
      */
     public static class Builder {
 
-        private MenuItem mMenuItem;
         private Context mContext;
 
         @ColorRes
